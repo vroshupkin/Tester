@@ -3,5 +3,12 @@
      "editor.codeActionsOnSave": {
         "source.fixAll.eslint": "explicit"
     },
-    "search.useIgnoreFiles": false
+    "search.useIgnoreFiles": false,
+    "search.exclude": {
+        "**/node_modules": true,
+        "**/bower_components": true,
+        "**/*.code-search": true,
+        "**/.git": true,
+        "**/dist": true
+    }
 }
