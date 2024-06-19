@@ -32,7 +32,7 @@ model TestCases {
   id     Int     @id @default(autoincrement())
   name   String  @unique
   userId Int
-  testId Int
+  testId Int[]
   UserId User    @relation(fields: [userId], references: [id])
   Tests  Tests[]
 }
