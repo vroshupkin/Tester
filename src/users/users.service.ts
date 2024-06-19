@@ -7,6 +7,19 @@ import { User, Prisma } from '@prisma/client';
 export class UsersService {
 	constructor(private prisma: PrismaService) {}
 
+	async getUser(login: string): Promise<number | undefined>
+	{
+		const data = await this.prisma.user.findFirst({where: {login}})
+
+		if(data != null && 'id' in data)
+		{
+			return data.id;
+		}
+
+		return null;
+	}
+
+	// TODO нужно ли?
 	async user(
 		userWhereUniqueInput: Prisma.UserWhereUniqueInput,
 	): Promise<User | null> {
@@ -15,6 +28,7 @@ export class UsersService {
 		});
 	}
 
+	// TODO нужно ли?
 	async users(params: {
     skip?: number;
     take?: number;
@@ -33,9 +47,7 @@ export class UsersService {
 	}
 
 	async createUser(data: Prisma.UserCreateInput): Promise<User> {
-		return this.prisma.user.create({
-			data,
-		});
+		return this.prisma.user.create({data});
 	}
 
 	async updateUser(params: {
@@ -49,9 +61,7 @@ export class UsersService {
 		});
 	}
 
-	async deleteUser(where: Prisma.UserWhereUniqueInput): Promise<User> {
-		return this.prisma.user.delete({
-			where,
-		});
+	async deleteUser(login: string): Promise<User> {
+		return await this.prisma.user.delete({where: {login}});
 	}
 }

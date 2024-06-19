@@ -1,25 +1,31 @@
-import { URL } from "../common/common";
+import { usersApi } from "./users.api";
 
-// TODO защитить эндпоинт
-test('get user', async () => 
-{
-	const requestInit: RequestInit = {
-		method: 'POST',
-		headers: {'Content-Type': 'application/json'},
-		body: JSON.stringify({
-			login: 'test'
+
+describe('users', () => {
+	{
+		const login = 'mock_test';
+		const password = 'mock_test';
+		
+		beforeAll( async () => 
+		{
+			await usersApi.deleteUser(login);
+		})
+
+		test('create user', async () => 
+		{
+			const res = await usersApi.createUser({login, password});
+			expect(res.id > 0).toBe(true);
+		})
+
+		// TODO защитить эндпоинт
+		test('get user', async () => 
+		{	
+			const userId = await usersApi.getUser(login);
+			
+			expect(Number(userId) > 0).toBe(true);
 		})
 	}
-
-	const res = await fetch(`${URL}/users/user`, requestInit);
-
-	const data = await res.json();
-	
-	const {password} = data;
-
-	expect(password != undefined && typeof password === 'string')
-		.toBe(true);
-  
 })
+
 
 
