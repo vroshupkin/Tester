@@ -1,37 +1,49 @@
 import { URL } from "../common/common";
 import * as colors from 'colors';
+import { TUsersRole } from "./users.types";
 
 const requestPost: RequestInit = {
 	method: 'POST',
 	headers: {'Content-Type': 'application/json'},
 }
 
-const getToken = async () => {};
 
-
-const getUser = async (login: string) => 
+const postFetchText = async <T extends Record<string, unknown>>(
+	body_input: T, end_point: string) => 
 {
-	const body = JSON.stringify({login});
-	const res = await fetch(`${URL}/users/get`, {...requestPost, body});
+	const body = JSON.stringify(body_input);
+	const res = await fetch(`${URL}/${end_point}`, {...requestPost, body});
 
-	return await res.text();  
+	return res.text();
 }
 
-const createUser = async(body_obj: {login: string, password: string}) => 
+const postFetchJson = async <T extends Record<string, unknown>>(
+	body_input: T, end_point: string) => 
 {
-	const body = JSON.stringify(body_obj);
-	const res = await fetch(`${URL}/users/create`, {...requestPost, body})
+	const body = JSON.stringify(body_input);
+	const res = await fetch(`${URL}/${end_point}`, {...requestPost, body});
 
-	return await res.json();
-}
-
-const deleteUser = async(login: string) => 
-{
-	const body = JSON.stringify({login});
-	const res = await fetch(`${URL}/users/delete`, {...requestPost, body});
-
-	return await res.text();
+	return res.json();
 }
 
 
-export const usersApi = { getUser, createUser, deleteUser }
+
+export const getUser = (body: {login: string}) => 
+	postFetchText(body, 'users/get');
+
+
+export const createUser = (body: {login: string, password: string}) => 
+	postFetchJson(body, 'users/create');
+	
+
+export const deleteUser = (body: {login: string}) => 
+	postFetchText(body, 'users/delete');
+
+
+export const loginUser = (body: {login: string, password: string}) => 
+	postFetchText(body, 'users/login');
+
+
+export const isUserToken = 
+	async(body_input: {login: string, token: string, roles?: TUsersRole[]})=>
+		postFetchText(body_input, 'users/verify_token')

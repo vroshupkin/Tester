@@ -1,7 +1,11 @@
+import * as colors from 'colors';
 
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../database/database.service';
 import { User, Prisma } from '@prisma/client';
+import * as jwt from 'jsonwebtoken';
+import { ENV } from '../env';
+import { TUsersRole as TUserRole } from './users.types';
 
 @Injectable()
 export class UsersService {
@@ -46,8 +50,20 @@ export class UsersService {
 		});
 	}
 
-	async createUser(data: Prisma.UserCreateInput): Promise<User> {
-		return this.prisma.user.create({data});
+	async createUser(data: {login: string, password: string}): Promise<User> {
+		const {login, password} = data;
+
+		const user = await this.prisma.user.create({
+			data: {
+				login, password,
+				UserRole: {
+					create: { roles: ['User']}
+				}
+			},
+		
+		});
+
+		return user;
 	}
 
 	async updateUser(params: {
@@ -61,7 +77,59 @@ export class UsersService {
 		});
 	}
 
-	async deleteUser(login: string): Promise<User> {
-		return await this.prisma.user.delete({where: {login}});
+	async deleteUser(login: string): Promise<User> 
+	{
+		const user = await this.prisma.user.findFirst({where: {login}});
+
+		await this.prisma.userRole.delete({where: {userId: user.id}});
+
+		return await this.prisma.user.delete({
+			where: {id: user.id},
+		});
 	}
+
+	async login(login: string, password: string) 
+	{
+		const user = await this.prisma.user.findFirst({where: {login}});
+		const {roles} = await this.prisma.userRole.findFirst({where: {userId: user.id}});
+
+		if(!user || user.password != password)
+		{
+			return null;
+		}
+					
+		const payload = {type: "user_verify", login, roles};
+
+		return jwt.sign(payload, ENV.JWT_SECRET, {expiresIn: '1d'});
+	}
+
+	// Проверяет принадлежит ли токен пользователю и соответсвует от он роли roles. 
+	async isUserToken(input: {login: string, token: string, roles?: TUserRole[]})
+	{
+		const {login, token} = input;
+
+		const decoded = jwt.verify(token, ENV.JWT_SECRET);
+		
+		if(!decoded || login != decoded['login'])
+		{
+			return false
+		}
+
+		// console.log(colors.bgGreen(JSON.stringify(decoded)));
+		// console.log((decoded['roles'] as string[]).includes);
+
+
+		const roles = input.roles ?? ['User'];
+
+		for (const role of roles) 
+		{
+			if(!decoded['roles'].includes(role))
+			{
+				return false
+			}
+		}
+		
+		return decoded['login'] === input.login
+	}
+
 }

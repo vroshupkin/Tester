@@ -6,7 +6,12 @@ import { ENV } from './env';
 async function bootstrap() {
 	const app = await NestFactory.create(AppModule);
 
-	
+	app.enableCors({
+		origin: 'http://localhost:5173', 							// Replace with the URL of your frontend
+		methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+		credentials: true, 														// Allow cookies to be sent with requests
+	});
+
 	const config = new DocumentBuilder()
 		.setTitle('Tester')
 		.setDescription('Tester API description')

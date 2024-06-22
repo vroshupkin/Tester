@@ -18,6 +18,13 @@ model User {
   login    String      @unique
   password String
   Test     TestCases[]
+  UserRole UserRole[]
+}
+
+model UserRole {
+  userId Int      @id
+  User   User     @relation(fields: [userId], references: [id])
+  roles  String[]
 }
 
 model Tests {
