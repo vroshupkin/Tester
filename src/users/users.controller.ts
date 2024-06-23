@@ -1,7 +1,6 @@
 import { Body, Controller, HttpCode, HttpStatus, Post, Res } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { Response } from 'express';
-import { logger_1 } from 'src/common/common';
 import { UsersService } from './users.service';
 
 
@@ -17,14 +16,12 @@ export class UsersController{
 		const {login, password} = body;
 		const token = await this.usersService.login(login, password);
 
-		logger_1(token);
 		if(!token)
 		{
 			response.status(HttpStatus.BAD_REQUEST).send();
 			return;
 		}
 
-		logger_1('ACCEPTED')
 		response.status(HttpStatus.ACCEPTED).send(token);
 		
 	}

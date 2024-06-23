@@ -1,5 +1,5 @@
-import {ENV} from '../env'
-import * as colors from 'colors'
+import * as colors from 'colors';
+import { ENV } from '../env';
 
 export const URL = `http://localhost:${ENV.PORT}`;
 

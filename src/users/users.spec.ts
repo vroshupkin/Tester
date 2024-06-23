@@ -1,5 +1,4 @@
 import * as usersApi from "./users.api";
-import { logger_1 } from '../common/common';
 import { HttpStatus } from '@nestjs/common';
 
 
@@ -36,7 +35,6 @@ describe('users', () => {
 			const res = await usersApi.getUserRoles({token, login});
 			const roles = await res.json();
 
-			logger_1(roles);
 
 			expect(roles.includes('User')).toBe(true);
 		}, 10000)

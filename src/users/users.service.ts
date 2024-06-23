@@ -2,7 +2,6 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma, User } from '@prisma/client';
 import * as jwt from 'jsonwebtoken';
-import { logger_1 } from 'src/common/common';
 import { PrismaService } from '../database/database.service';
 import { ENV } from '../env';
 import { TUsersRole as TUserRole } from './users.types';
@@ -87,18 +86,10 @@ export class UsersService {
 
 		const roles = await this.prisma.userRole.findFirst({where: {userId: user.id}});
 
-		logger_1(roles);
-
 		if(!roles)
 		{
-			logger_1("HEEEER")
-			const res = await this.prisma.userRole.create({data: {userId: user.id, roles: ['User']}})
-			logger_1(res)
-
-		}
-		logger_1(JSON.stringify(roles));
-		
-					
+			await this.prisma.userRole.create({data: {userId: user.id, roles: ['User']}})
+		}					
 		const payload = {type: "user_verify", login, roles: roles};
 
 		return jwt.sign(payload, ENV.JWT_SECRET, {expiresIn: '1d'});
