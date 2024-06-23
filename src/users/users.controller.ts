@@ -1,7 +1,8 @@
-import { Body, Controller, Post } from '@nestjs/common';
-import { UsersService } from './users.service';
+import { Body, Controller, HttpCode, HttpStatus, Post, Res } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import * as jwt from 'jsonwebtoken'
+import { Response } from 'express';
+import { logger_1 } from 'src/common/common';
+import { UsersService } from './users.service';
 
 
 @Controller('users')
@@ -10,16 +11,31 @@ export class UsersController{
 
   
 	@Post('login')
-	async login(@Body() body: {login: string, password: string})
+	@HttpCode(HttpStatus.ACCEPTED)
+	async login(@Body() body: {login: string, password: string}, @Res() response: Response)
 	{
 		const {login, password} = body;
-		return await this.usersService.login(login, password);
+		const token = await this.usersService.login(login, password);
+
+		logger_1(token);
+		if(!token)
+		{
+			response.status(HttpStatus.BAD_REQUEST).send();
+			return;
+		}
+
+		logger_1('ACCEPTED')
+		response.status(HttpStatus.ACCEPTED).send(token);
+		
 	}
 
 	@Post('get')
-	async getUser(@Body() body: {login: string,}): Promise<number> 
+	@HttpCode(HttpStatus.OK)
+	async getUser(@Body() body: {login: string})
 	{		
-		return await this.usersService.getUser(body.login);
+		const {login} = body;
+
+		return (await this.usersService.getUser({login})).id;
 	}
 
 	@Post('create')
@@ -37,10 +53,16 @@ export class UsersController{
 		return await this.usersService.deleteUser(login)
 	}
 
-	@Post('verify_token')
-	async verifyToken(@Body() body: {login: string, token: string})
-	{
-		return await this.usersService.isUserToken(body);
+	@Post('get_user_roles')
+	@HttpCode(HttpStatus.OK)
+	async verifyToken(@Body() body: {login: string, token: string}, @Res() response: Response)
+	{	
+
+		const data = await this.usersService.getUserRoles(body);
+
+		response.status(HttpStatus.OK);
+		response.send(data);
+		
 	}
 }
 

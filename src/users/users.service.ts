@@ -1,9 +1,9 @@
-import * as colors from 'colors';
 
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../database/database.service';
-import { User, Prisma } from '@prisma/client';
+import { Prisma, User } from '@prisma/client';
 import * as jwt from 'jsonwebtoken';
+import { logger_1 } from 'src/common/common';
+import { PrismaService } from '../database/database.service';
 import { ENV } from '../env';
 import { TUsersRole as TUserRole } from './users.types';
 
@@ -11,17 +11,6 @@ import { TUsersRole as TUserRole } from './users.types';
 export class UsersService {
 	constructor(private prisma: PrismaService) {}
 
-	async getUser(login: string): Promise<number | undefined>
-	{
-		const data = await this.prisma.user.findFirst({where: {login}})
-
-		if(data != null && 'id' in data)
-		{
-			return data.id;
-		}
-
-		return null;
-	}
 
 	// TODO нужно ли?
 	async user(
@@ -77,7 +66,7 @@ export class UsersService {
 		});
 	}
 
-	async deleteUser(login: string): Promise<User> 
+	deleteUser = async (login: string): Promise<User> =>
 	{
 		const user = await this.prisma.user.findFirst({where: {login}});
 
@@ -88,48 +77,93 @@ export class UsersService {
 		});
 	}
 
-	async login(login: string, password: string) 
+	login = async (login: string, password: string): Promise<string | null> => 
 	{
 		const user = await this.prisma.user.findFirst({where: {login}});
-		const {roles} = await this.prisma.userRole.findFirst({where: {userId: user.id}});
-
 		if(!user || user.password != password)
 		{
 			return null;
 		}
+
+		const roles = await this.prisma.userRole.findFirst({where: {userId: user.id}});
+
+		logger_1(roles);
+
+		if(!roles)
+		{
+			logger_1("HEEEER")
+			const res = await this.prisma.userRole.create({data: {userId: user.id, roles: ['User']}})
+			logger_1(res)
+
+		}
+		logger_1(JSON.stringify(roles));
+		
 					
-		const payload = {type: "user_verify", login, roles};
+		const payload = {type: "user_verify", login, roles: roles};
 
 		return jwt.sign(payload, ENV.JWT_SECRET, {expiresIn: '1d'});
 	}
 
-	// Проверяет принадлежит ли токен пользователю и соответсвует от он роли roles. 
-	async isUserToken(input: {login: string, token: string, roles?: TUserRole[]})
+	getUserRoles = async (input: {login: string, token: string}): Promise<TUserRole[] | false> =>
 	{
 		const {login, token} = input;
+		const userToken = new UserToken(login, this.prisma);
 
+		if(await userToken.verify(token))
+		{	
+			const user = await this.prisma.user.findFirst({where: {login}});
+			if(!user) {return false}
+
+			const user_role = await this.prisma.userRole.findFirst({where: {userId: user.id}});
+			if(user_role) {return false}
+			
+			return user_role.roles as TUserRole[];
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	getUser = async (input: {login: string}) =>
+	{
+		const {login} = input;
+		return await this.prisma.user.findFirst({where: {login}});
+	}
+
+
+}
+
+class UserToken
+{
+	private type = 'user_verify'
+
+	constructor(private login: string, private prisma: PrismaService){}
+
+	verify = async (token: string) => 
+	{
 		const decoded = jwt.verify(token, ENV.JWT_SECRET);
-		
-		if(!decoded || login != decoded['login'])
+		const isLoginExist = await this.isLoginExist();
+
+		return decoded && decoded['type'] === 'user_verify' && isLoginExist
+	}
+
+	encode = async () => 
+	{
+		if(await this.isLoginExist())
 		{
-			return false
-		}
-
-		// console.log(colors.bgGreen(JSON.stringify(decoded)));
-		// console.log((decoded['roles'] as string[]).includes);
-
-
-		const roles = input.roles ?? ['User'];
-
-		for (const role of roles) 
-		{
-			if(!decoded['roles'].includes(role))
-			{
-				return false
-			}
+			return ''
 		}
 		
-		return decoded['login'] === input.login
+		return jwt.sign({login: this.login, type: this.type}, ENV.JWT_SECRET);
+	}
+
+	private isLoginExist = async() => 
+	{
+		const login = this.login;
+		const user = this.prisma.user.findFirst({where: {login}});
+
+		return user ? true : false;
 	}
 
 }
