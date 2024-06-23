@@ -106,7 +106,7 @@ export class UsersService {
 			if(!user) {return false}
 
 			const user_role = await this.prisma.userRole.findFirst({where: {userId: user.id}});
-			if(user_role) {return false}
+			if(!user_role) {return false}
 			
 			return user_role.roles as TUserRole[];
 		}
